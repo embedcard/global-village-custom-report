@@ -1,0 +1,9 @@
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\bin\Debug\Play Value Report.exe.config
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\bin\Debug\Play Value Report.exe
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\bin\Debug\Play Value Report.pdb
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play Value Report.csprojResolveAssemblyReference.cache
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play_Value_Report.frmMain.resources
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play_Value_Report.Properties.Resources.resources
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play Value Report.csproj.GenerateResource.Cache
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play Value Report.exe
+C:\Users\steven.micklewright\Development\C# Projects\Play Value Report\Play Value Report\obj\Debug\Play Value Report.pdb

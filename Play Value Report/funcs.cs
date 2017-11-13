@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Data;
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace Play_Value_Report
 {
@@ -148,13 +149,17 @@ namespace Play_Value_Report
         }
 
         // Save data grid to CSV
-        public static void SaveDataGridViewToCSV(DataGridView dataGrid, string filename)
+        public static void SaveDataGridViewToCSV(DataGridView dataGrid, string filename, string fromDate = "", string ToDate = "")
         {
             try
             {
                 var sb = new StringBuilder();
-
                 var headers = dataGrid.Columns.Cast<DataGridViewColumn>();
+                if (fromDate.Length > 1 && ToDate.Length > 1)
+                {
+                    sb.AppendLine("From: " + "," + fromDate + "," + "," + "To Date: " + "," + ToDate);
+                    sb.AppendLine("");
+                }
                 sb.AppendLine(string.Join(",", headers.Select(column => "\"" + column.HeaderText + "\"").ToArray()));
 
                 foreach (DataGridViewRow row in dataGrid.Rows)
@@ -173,6 +178,56 @@ namespace Play_Value_Report
                 //File.WriteAllText(filename, dataObject.GetText(TextDataFormat.CommaSeparatedValue));
             }
             catch (Exception) { LogWrite("Error exporting to CSV"); }
+        }
+
+        // Simply add a trailing backslash to a string - for use with folders and the auto update
+        public static string AddTrailingBackslash(string path)
+        {
+            // Set the seperate char with \
+            string separator1 = Path.DirectorySeparatorChar.ToString();
+            string separator2 = Path.AltDirectorySeparatorChar.ToString();
+            // Tidy up string
+            path = path.Trim();
+            // Return default string if it already ends with \
+            if (path.EndsWith(separator1) || path.EndsWith(separator2))
+                return path;
+            // IF there is alternative seperator then add that (think linux)
+            if (path.Contains(separator2))
+                return path + separator2;
+            // Add Windows seperater if nothing else to do
+            return path + separator1;
+        }
+    }
+
+    /// INI file read and write class
+    public class iniFile
+    {
+        public string path;
+
+        [DllImport("kernel32")]
+        private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
+        [DllImport("kernel32")]
+        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
+
+        // INIFile Constructor.
+        public iniFile(string INIPath)
+        {
+            path = INIPath;
+        }
+
+        // Write Data to the INI File
+        public void IniWriteValue(string Section, string Key, string Value)
+        {
+            WritePrivateProfileString(Section, Key, Value, this.path);
+        }
+
+        // Read Data Value From the Ini File
+        public string IniReadValue(string Section, string Key)
+        {
+            StringBuilder temp = new StringBuilder(255);
+            int i = GetPrivateProfileString(Section, Key, "", temp, 255, this.path);
+            return temp.ToString();
+
         }
     }
 }

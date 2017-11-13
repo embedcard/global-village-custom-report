@@ -12,6 +12,9 @@ namespace Play_Value_Report
     public partial class frmMain : Form
     {
         static List<classy.GameCategories> gameCats = new List<classy.GameCategories>();
+        bool autoMode = false;
+        int autoDays = 1;
+        string autoCats = "";
 
         public frmMain()
         {
@@ -22,6 +25,39 @@ namespace Play_Value_Report
         {
             // Set default values
             clbGroups.Items.Clear();
+
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Length > 1 && args[1].Equals("auto"))
+            {
+                string configFile = AppDomain.CurrentDomain.BaseDirectory + "report.ini";
+                if (!File.Exists(configFile))
+                {
+                    funcs.LogWrite("Auto mode initiated but no INI file found!");
+                    Application.Exit();
+                }
+                else
+                {
+                    autoMode = true;
+                    try
+                    {
+                        iniFile ini = new iniFile(configFile);
+                        autoDays = Int32.Parse(ini.IniReadValue("Options", "DaysToRun"));
+                        if (Directory.Exists(ini.IniReadValue("Export", "ToFolder")))
+                            globals.ExportPath = ini.IniReadValue("Export", "ToFolder");
+                        else
+                            globals.ExportPath = AppDomain.CurrentDomain.BaseDirectory;
+                        if (ini.IniReadValue("Options", "GameCategories").Length > 0)
+                        {
+                            autoCats = ini.IniReadValue("Options", "GameCategories");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        funcs.LogWrite("Error in report.ini auto configuration file.");
+                        Application.Exit();
+                    }
+                }
+            }
 
             // Attempt to connect to database
             try
@@ -39,7 +75,7 @@ namespace Play_Value_Report
                 else
                 {
                     funcs.LogWrite("Database.loc not found!");
-                    MessageBox.Show("Database.loc not found! Application will now exit.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    if (!autoMode) { MessageBox.Show("Database.loc not found! Application will now exit.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Exclamation); }
                     Application.Exit();
                 }
             }
@@ -48,12 +84,36 @@ namespace Play_Value_Report
             if (!funcs.TestDatabaseConnection(globals.ConnectionString))
             {
                 funcs.LogWrite("DATABASE CONNECTION ERROR");
-                MessageBox.Show("Unable to connect to the database specified. Application will now close.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                if (!autoMode)
+                { MessageBox.Show("Unable to connect to the database specified. Application will now close.", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Exclamation); }
                 Application.Exit();
             }
 
             // Set new timeout for database connections
             globals.ConnectionString += "  connection timeout=15";
+
+            // Setup basic controls
+            dtpFrom.Value = DateTime.Now.AddDays(-autoDays).Date;
+            dtpFrom.Value = new DateTime(dtpFrom.Value.Year, dtpFrom.Value.Month, dtpFrom.Value.Day, 6, 0, 0);
+            dtpTo.Value = DateTime.Now.Date.AddDays(1).AddTicks(-1);
+            dtpTo.Value = new DateTime(dtpTo.Value.Year, dtpTo.Value.Month, dtpTo.Value.Day, 5, 59, 0);
+            funcs.GetGameCategoryList(gameCats);
+            foreach (var item in gameCats)
+            {
+                clbGroups.Items.Add(item.description, true);
+            }
+
+            // Allow for auto execution from command line
+            if (autoMode)
+            {
+                this.WindowState = FormWindowState.Minimized;
+                string saveFile = funcs.AddTrailingBackslash(globals.ExportPath) + "PlayValueReport - " + DateTime.Now.ToString("yyyy-MM-dd") + ".csv";
+                // Run the report and then close the application
+                funcs.SimplifyGameCats(clbGroups, gameCats);
+                funcs.RunReport(grdResults, dtpFrom.Value, dtpTo.Value, autoCats);
+                funcs.SaveDataGridViewToCSV(grdResults, saveFile, dtpFrom.Value.ToString(), dtpTo.Value.ToString());
+                Application.Exit();
+            }
 
         }
 
@@ -87,15 +147,8 @@ namespace Play_Value_Report
             btnExport.Refresh();
             btnExport.Enabled = false;
             btnRun.Focus();
-            dtpFrom.Value = DateTime.Now.AddDays(-1).Date;
-            dtpTo.Value = DateTime.Now.Date.AddDays(1).AddTicks(-1);
-            funcs.GetGameCategoryList(gameCats);
-            foreach (var item in gameCats)
-            {
-                clbGroups.Items.Add(item.description, true);
-            }
-
-            }
+            
+        }
 
         private void btnRun_Click(object sender, EventArgs e)
         {
@@ -133,7 +186,7 @@ namespace Play_Value_Report
 
             if (Directory.Exists(globals.ExportDir) && globals.ExportPath != String.Empty)
             {
-                funcs.SaveDataGridViewToCSV(grdResults, globals.ExportPath);
+                funcs.SaveDataGridViewToCSV(grdResults, globals.ExportPath, dtpFrom.Value.ToString(), dtpTo.Value.ToString());
                 MessageBox.Show("Export completed");
             }
             else
